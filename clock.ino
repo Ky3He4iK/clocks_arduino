@@ -125,7 +125,7 @@ void time_set() {
         indicator = !indicator;
         digitalWrite(INDICATOR_LED, indicator);
 
-        if (digitalRead(BUTTON_HOUR)) {
+        while (digitalRead(BUTTON_HOUR)) {
             delay(50);
             time.settime(-1, -1, (time.Hours == 23 ? 0 : time.Hours + 1), -1, -1, -1, -1);
             hours = time.Hours;
@@ -134,7 +134,7 @@ void time_set() {
             indicator = LOW;
         }
 
-        if (digitalRead(BUTTON_MINUTES)) {
+        while (digitalRead(BUTTON_MINUTES)) {
             delay(50);
             time.settime(-1, (time.minutes == 59 ? 0 : time.minutes + 1), -1, -1, -1, -1, -1);
             minutes = time.minutes;
@@ -146,8 +146,8 @@ void time_set() {
         i++;
 
         if (digitalRead(BUTTON_SET)) {
-            i = 100;
             indicator = LOW;
+            break;
         }
     }
     indicator = LOW;
