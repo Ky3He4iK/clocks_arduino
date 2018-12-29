@@ -1,28 +1,28 @@
 #include <Arduino.h>
-#include <TM163.h>
-#include <TM1637.h>
 #include <iarduino_RTC.h>
 #include <Wire.h>
 #include <DS3231.h>
+#include <TM1637_mult.h>
 
-#define CLK 12
-#define DIO 11
-#define CLK2 10
-#define DIO2 9
-#define brightness 1
-#define SH_CP 4
+#define CLK_HEX 12 // Пины "циферблатов"
+#define DIO_HEX 11
+#define CLK_OCT 10
+#define DIO_OCT 9
+
+#define brightness 1 // brightness of clocks
+
 #define ST_CP 3
+#define SH_CP 4 // ???
 #define DS 5
 
 const uint8_t SET = 6;
 const uint8_t HOUR = 7;
 const uint8_t MIN = 8;
 
-TM1637 tm1637HEX(CLK, DIO);
-TM163 tm1637OCT(CLK2, DIO2);
+TM1637 screen_HEX(CLK_HEX, DIO_HEX);
+TM1637 screen_OCT(CLK_OCT, DIO_OCT);
 iarduino_RTC time(RTC_DS3231);
 
-char *t;
 uint8_t type = 8;
 uint8_t min, sec, hour, i = 0, a = 0;
 byte timeDisp[4];
@@ -31,7 +31,6 @@ bool flag = LOW;
 //time_out(hour,min,sec);
 
 void setup() {
-
     Wire.begin();
     time.begin();
 
@@ -43,45 +42,43 @@ void setup() {
     pinMode(HOUR, INPUT);
     pinMode(MIN, INPUT);
 
-    tm1637HEX.init();
-    tm1637HEX.set(brightness);
+    screen_HEX.init();
+    screen_HEX.set(brightness);
 
-    tm1637OCT.init();
-    tm1637OCT.set(brightness);
+    screen_OCT.init();
+    screen_OCT.set(brightness);
 
-    tm1637HEX.point(true);
-    tm1637OCT.point(true);
-
+    screen_HEX.point(true);
+    screen_OCT.point(true);
 }
 
 void time_out() {
-
-    tm1637HEX.point(!(sec & 1));
-    tm1637OCT.point(!(sec & 1));
-//flag=!( sec & 1);
-//digitalWrite(13,flag);
+    screen_HEX.point(!(sec & 1));
+    screen_OCT.point(!(sec & 1));
 
     if (type == 10) {
         timeDisp[0] = hour / 10;
         timeDisp[1] = hour % 10;
         timeDisp[2] = min / 10;
         timeDisp[3] = min % 10;
-//  timeDisp[2] = sec / 10;
-//  timeDisp[3] = sec % 10;
-        for (int i = 0; i < 4; i++) { tm1637OCT.display(i, timeDisp[i]); }
+        for (int i = 0; i < 4; i++) {
+            screen_OCT.display(i, timeDisp[i]);
+        }
     } else {
         timeDisp[0] = hour / 8;
         timeDisp[1] = hour % 8;
         timeDisp[2] = min / 8;
         timeDisp[3] = min % 8;
-        for (int i = 0; i < 4; i++) { tm1637OCT.display(i, timeDisp[i]); }
+        for (int i = 0; i < 4; i++)
+            screen_OCT.display(i, timeDisp[i]);
     }
 
     timeDisp[0] = hour / 16;
     timeDisp[1] = hour % 16;
     timeDisp[2] = min / 16;
     timeDisp[3] = min % 16;
-    for (int i = 0; i < 4; i++) { tm1637HEX.display(i, timeDisp[i]); }
+    for (int i = 0; i < 4; i++)
+        screen_HEX.display(i, timeDisp[i]);
 
     // выводим двоичные часы/минуты/секунды
     // Инициализируем начало приема данных
@@ -91,19 +88,17 @@ void time_out() {
     shiftOut(DS, SH_CP, MSBFIRST, sec);
     shiftOut(DS, SH_CP, MSBFIRST, min);
     shiftOut(DS, SH_CP, MSBFIRST, hour);
+
     // Инициализируем окончание передачи данных.
     // Регистры подадут напряжение на указанные выходы
     digitalWrite(ST_CP, HIGH);
-
 }
 
 void time_set() {
-
     i = 0;
 
-    while (digitalRead(SET)) {
+    while (digitalRead(SET))
         digitalWrite(13, HIGH);
-    }
 
     while (i < 100) {
         delay(100);
@@ -139,7 +134,6 @@ void time_set() {
 }
 
 void loop() {
-
     time.gettime();
     sec = time.seconds;
     min = time.minutes;
