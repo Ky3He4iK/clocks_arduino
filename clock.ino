@@ -31,7 +31,7 @@
 
 #define TEMPERATURE_PIN A0 // for temperature chip(s?) with 1-wire communication
 
-#define UPDATE_PERIOD_MS 300 // update time every UPDATE_PERIOD ms
+#define UPDATE_PERIOD_MS 250 // update time every UPDATE_PERIOD ms
 #define CHANGE_TIME_S 5 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
 #define MODES_COUNT 2
 
