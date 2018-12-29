@@ -8,6 +8,7 @@
 #include "libraries/DallasTemperature/DallasTemperature.h" // include by only library name wasn't work
 #include "libraries/DallasTemperature/DallasTemperature.cpp" // because normal library connection is'n working
 #include "../../../../usr/share/arduino/hardware/arduino/avr/cores/arduino/HardwareSerial.h"
+#include "../../../../usr/avr/include/avr/io.h"
 //#include <DallasTemperature.h>
 
 #define DEBUG 0 // using in debug
@@ -31,16 +32,23 @@
 
 #define TEMPERATURE_PIN A0 // for temperature chip(s?) with 1-wire communication
 
-#define UPDATE_PERIOD_MS 250 // update time every UPDATE_PERIOD ms
-#define CHANGE_TIME_S 5 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
-#define MODES_COUNT 2
-
-#define SMALL_DELAY_MS 100 // delay in set time mode
-
+// symbols codes on screen
 #define DEGREE_SYMBOL 0b01100011
 #define C_SYMBOL 0b00111001
 #define r_SYMBOL 0b01010000
 #define E_SYMBOL 0b01111001
+
+// ---------------------------------- CONFIGURABLE CONSTANTS ---------------------------------------
+// update time every UPDATE_PERIOD ms
+#define UPDATE_PERIOD_MS 250
+
+// change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+#define CHANGE_TIME_S 5
+#define MODES_COUNT 2
+
+// delay in set time mode
+#define SMALL_DELAY_MS 100
+// ++++++++++++++++++++++++++++++++++ CONFIGURABLE CONSTANTS +++++++++++++++++++++++++++++++++++++++
 
 // every ONE_MODE_CYCLES increase mode
 const uint8_t ONE_MODE_CYCLES = (CHANGE_TIME_S * 1000) / UPDATE_PERIOD_MS;
@@ -72,13 +80,12 @@ void setup() {
     Wire.begin();
     time.begin();
 
-    pinMode(SH_CP, OUTPUT);
-    pinMode(ST_CP, OUTPUT);
-    pinMode(DS, OUTPUT);
-    pinMode(INDICATOR_LED, OUTPUT);
-    pinMode(BUTTON_SET, INPUT);
-    pinMode(BUTTON_HOUR, INPUT);
-    pinMode(BUTTON_MINUTES, INPUT);
+    uint8_t pins_output[] = {SH_CP, ST_CP, DS, INDICATOR_LED}; // temp array with all output pins in one place
+    for (auto &i: pins_output)
+        pinMode(i, OUTPUT);
+    uint8_t pins_input[] = {BUTTON_SET, BUTTON_HOUR, BUTTON_MINUTES}; // temp array with all input pins in one place
+    for (auto &i: pins_input)
+        pinMode(i, INPUT);
 
     screen_HEX.init();
     screen_HEX.set(BRIGHTNESS);
