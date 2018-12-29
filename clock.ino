@@ -4,6 +4,14 @@
 #include <DS3231.h>
 #include <TM1637_mult.h>
 
+#include <OneWire.h>
+#include "libraries/DallasTemperature/DallasTemperature.h" // include by only library name wasn't work
+#include "libraries/DallasTemperature/DallasTemperature.cpp" // because normal library connection is'n working
+#include "../../../../usr/share/arduino/hardware/arduino/avr/cores/arduino/HardwareSerial.h"
+//#include <DallasTemperature.h>
+
+#define DEBUG 1 // using in debug
+
 #define CLK_HEX 12 // Пины "циферблатов"
 #define DIO_HEX 11
 #define CLK_OCT 10
@@ -21,11 +29,18 @@
 #define BUTTON_HOUR 7
 #define BUTTON_MINUTES 8
 
+#define TEMPERATURE_PIN A0 // for temperature chip(s?) with 1-wire communication
+
 #define UPDATE_PERIOD_MS 300 // update time every UPDATE_PERIOD ms
-#define CHANGE_TIME_S 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+#define CHANGE_TIME_S 5 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
 #define MODES_COUNT 2
 
 #define SMALL_DELAY_MS 100 // delay in set time mode
+
+#define DEGREE_SYMBOL 0b01100011
+#define CELSIUM_SYMBOL 0b00111001
+#define r_SYMBOL 0b01010000
+#define E_SYMBOL 0b01111001
 
 // every ONE_MODE_CYCLES increase mode
 const uint8_t ONE_MODE_CYCLES = (CHANGE_TIME_S * 1000) / UPDATE_PERIOD_MS;
@@ -33,6 +48,11 @@ const uint8_t ONE_MODE_CYCLES = (CHANGE_TIME_S * 1000) / UPDATE_PERIOD_MS;
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
 iarduino_RTC time(RTC_DS3231);
+
+OneWire oneWire(TEMPERATURE_PIN);
+DallasTemperature thermo_sensors(&oneWire);
+DeviceAddress thermometer_address;
+bool thermometer_connected = false;
 
 uint8_t current_tick = 0;
 uint8_t type = 8;
@@ -42,6 +62,11 @@ bool indicator = LOW;
 uint8_t mode = 0; // mode of show
 // 0 - standart 8/16-based time
 // 1 - temperature and 10-based time
+
+//template <T>;
+//T abs(T a) {
+//    return (a < 0) ? -a : a;
+//}
 
 void setup() {
     Wire.begin();
@@ -63,12 +88,21 @@ void setup() {
 
     screen_HEX.point(true);
     screen_OCT.point(true);
+
+#if DEBUG
+    Serial.begin(9600);
+    thermometer_connected = false;
+#endif
+#if !DEBUG
+//    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0);
+#endif
 }
 
 /**
  * outputs current time to *@param screen* with *@param base* numeric base
  */
 void time_to_screen(uint8_t base, TM1637 &screen) {
+    screen.point(!(sec & 1)); // set blinking point every second
     screen.display(0, hours / base);
     screen.display(1, hours % base);
     screen.display(2, minutes / base);
@@ -76,21 +110,52 @@ void time_to_screen(uint8_t base, TM1637 &screen) {
 }
 
 
-void temp_to_oct_screen() {
-    //TODO
+void temp_to_screen(TM1637 &screen) {
+    screen.point(false);
+#if DEBUG
+    Serial.print("Searching sensor...");
+    thermometer_connected = false;
+#else
+    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0);
+#endif
+#if DEBUG
+    Serial.println(thermometer_connected);
+#endif
+    if (thermometer_connected) {
+        int8_t res = (int8_t) thermo_sensors.getTempC(thermometer_address);
+#if DEBUG
+        Serial.print(thermo_sensors.getTempC(thermometer_address));
+#endif
+        if (res == DEVICE_DISCONNECTED_C)
+            thermometer_connected = false;
+        else {
+            screen.display(0, abs(res) / 10);
+            screen.display(1, abs(res) % 10);
+            screen.display_raw(2, DEGREE_SYMBOL);
+            screen.display_raw(3, CELSIUM_SYMBOL);
+        }
+    }
+#if DEBUG
+    Serial.print(" ");
+    Serial.println(thermo_sensors.getTempCByIndex(0));
+#endif
+    if (!thermometer_connected) {
+        screen.display_raw(0, E_SYMBOL);
+        screen.display_raw(1, r_SYMBOL);
+        screen.display_raw(2, r_SYMBOL);
+        screen.display_raw(3, 0);
+        thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0);
+    }
 }
 
 /**
  * outputs current time to all displays
  */
 void time_output() {
-    // set blinking point every second
-    screen_HEX.point(!(sec & 1));
-    screen_OCT.point(!(sec & 1));
     switch (mode) { // show different info in different modes
         case 1:
             time_to_screen(10, screen_HEX); // output time and temperature to digit screens
-            temp_to_oct_screen();
+            temp_to_screen(screen_OCT);
             break;
         case 0:
         default: // use mode 0 as fallback
@@ -110,6 +175,8 @@ void time_output() {
     // Инициализируем окончание передачи данных.
     // Регистры подадут напряжение на указанные выходы
     digitalWrite(ST_CP, HIGH);
+
+    thermo_sensors.begin();
 }
 
 void on_set_time() {
@@ -164,6 +231,9 @@ void time_set() {
 }
 
 void loop() {
+#if DEBUG
+    Serial.println(sec);
+#endif
     update_time();
 
     if (digitalRead(BUTTON_SET)) {

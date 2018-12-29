@@ -154,6 +154,19 @@ void TM1637::display(uint8_t BitAddr, int8_t DispData) {
     stop();           //
 }
 
+void TM1637::display_raw(uint8_t BitAddr, int8_t SegData) {
+    start();          //start signal sent to TM1637 from MCU
+    writeByte(ADDR_FIXED);//
+    stop();           //
+    start();          //
+    writeByte(BitAddr | 0xc0);//
+    writeByte(SegData);//
+    stop();            //
+    start();          //
+    writeByte(Cmd_DispCtrl);//
+    stop();           //
+}
+
 void TM1637::display(double Decimal) {
     int16_t temp;
     if (Decimal > 9999)return;

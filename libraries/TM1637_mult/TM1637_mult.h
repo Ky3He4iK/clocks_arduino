@@ -67,6 +67,7 @@ public:
     void display(int8_t DispData[]);
 
     void display(uint8_t BitAddr, int8_t DispData);
+    void display_raw(uint8_t BitAddr, int8_t SegData);
 
     void display(double Decimal);
 
