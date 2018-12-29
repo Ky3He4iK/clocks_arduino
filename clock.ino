@@ -11,13 +11,13 @@
 
 #define BRIGHTNESS 1 // brightness of clocks
 
-#define ST_CP 4 // pins to RTC
-#define SH_CP 5
-#define DS 6
+#define ST_CP 3 // pins to RTC
+#define SH_CP 4
+#define DS 5
 
 #define INDICATOR_LED 13 // led that indicates set mode
 
-#define BUTTON_SET 3 // buttons to set time
+#define BUTTON_SET 6 // buttons to set time
 #define BUTTON_HOUR 7
 #define BUTTON_MINUTES 8
 
@@ -26,10 +26,8 @@ TM1637 screen_OCT(CLK_OCT, DIO_OCT);
 iarduino_RTC time(RTC_DS3231);
 
 uint8_t type = 8;
-uint8_t minutes, sec, hours, i = 0, a = 0;
+uint8_t minutes, sec, hours, i = 0;
 bool indicator = LOW;
-
-volatile int button_set_state = 0;
 
 void setup() {
     Wire.begin();
@@ -51,6 +49,7 @@ void setup() {
 
     screen_HEX.point(true);
     screen_OCT.point(true);
+
 }
 
 /**

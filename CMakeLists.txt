@@ -31,7 +31,7 @@ set(_RECURSE true)
 #### Additional settings for programmer. From programmers.txt
 set(${PROJECT_NAME}_PROGRAMMER arduinoisp)
 set(${PROJECT_NAME}_PORT /dev/ttyUSB0)
-# set(nano.upload.speed 9600)
+set(nano.upload.speed 9600)
 
 ## Verbose build process
 set(${PROJECT_NAME}_AFLAGS -v)
