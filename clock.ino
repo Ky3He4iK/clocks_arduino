@@ -37,6 +37,12 @@
 #define C_SYMBOL 0b00111001
 #define r_SYMBOL 0b01010000
 #define E_SYMBOL 0b01111001
+// symbol structure:
+// ┏ 0 ┓
+// 5   1
+// ┣ 6 ┫
+// 4   2
+// ┗ 3 ┛
 
 // ---------------------------------- CONFIGURABLE CONSTANTS ---------------------------------------
 // update time every UPDATE_PERIOD ms
