@@ -21,14 +21,14 @@
 #define BUTTON_HOUR 7
 #define BUTTON_MINUTES 8
 
-#define UPDATE_PERIOD 300 // update time every UPDATE_PERIOD ms
-#define CHANGE_TIME 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+#define UPDATE_PERIOD_MS 300 // update time every UPDATE_PERIOD ms
+#define CHANGE_TIME_S 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
 #define MODES_COUNT 2
 
-#define SMALL_DELAY 100
+#define SMALL_DELAY_MS 100 // delay in set time mode
 
-// every ONE_MODE_LENGTH increase mode
-const uint8_t ONE_MODE_LENGTH = (CHANGE_TIME * 1000) / UPDATE_PERIOD;
+// every ONE_MODE_CYCLES increase mode
+const uint8_t ONE_MODE_CYCLES = (CHANGE_TIME_S * 1000) / UPDATE_PERIOD_MS;
 
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
@@ -76,7 +76,7 @@ void time_to_screen(uint8_t base, TM1637 &screen) {
 }
 
 
-void temp_to_hex_screen() {
+void temp_to_oct_screen() {
     //TODO
 }
 
@@ -89,8 +89,8 @@ void time_output() {
     screen_OCT.point(!(sec & 1));
     switch (mode) { // show different info in different modes
         case 1:
-            time_to_screen(10, screen_OCT); // output time and temperature to digit screens
-            temp_to_hex_screen();
+            time_to_screen(10, screen_HEX); // output time and temperature to digit screens
+            temp_to_oct_screen();
             break;
         case 0:
         default: // use mode 0 as fallback
@@ -115,7 +115,7 @@ void time_output() {
 void on_set_time() {
     time_output();
     i = 0;
-    delay(SMALL_DELAY);
+    delay(SMALL_DELAY_MS);
     indicator = LOW;
 }
 
@@ -132,13 +132,13 @@ void update_time() {
 void time_set() {
     while (digitalRead(BUTTON_SET)) { // keep going while SET button is still pressed
         digitalWrite(INDICATOR_LED, HIGH);
-        delay(SMALL_DELAY);
+        delay(SMALL_DELAY_MS);
         update_time();
         time_output();
     }
 
-    for (i = 0; i < 5000 / SMALL_DELAY; ++i) { // timeout about 5 seconds
-        delay(SMALL_DELAY);
+    for (i = 0; i < 5000 / SMALL_DELAY_MS; ++i) { // timeout about 5 seconds
+        delay(SMALL_DELAY_MS);
         indicator = !indicator;
         digitalWrite(INDICATOR_LED, indicator);
 
@@ -177,15 +177,15 @@ void loop() {
         }
     } else {
         i = 0;
-        mode = current_tick / ONE_MODE_LENGTH;
+        mode = current_tick / ONE_MODE_CYCLES;
         type = 8;
         time_output();
     }
 
     // increase tick and check for overflowing
     ++current_tick;
-    if (current_tick >= ONE_MODE_LENGTH * MODES_COUNT)
+    if (current_tick >= ONE_MODE_CYCLES * MODES_COUNT)
         current_tick = 0;
 
-    delay(UPDATE_PERIOD);
+    delay(UPDATE_PERIOD_MS);
 }
