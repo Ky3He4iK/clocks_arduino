@@ -21,10 +21,16 @@
 #define BUTTON_HOUR 7
 #define BUTTON_MINUTES 8
 
+#define UPDATE_PERIOD 300 // update time every UPDATE_PERIOD ms
+#define CHANGE_TIME 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+
+const uint8_t CYCLES_ONE_BASE = (CHANGE_TIME * 1000) / UPDATE_PERIOD; // every CYCLES_ONE_BASE change base between 10-bases and 8-based numerical systems
+
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
 iarduino_RTC time(RTC_DS3231);
 
+uint8_t current_tick = 0;
 uint8_t type = 8;
 uint8_t minutes, sec, hours, i = 0;
 bool indicator = LOW;
@@ -148,8 +154,11 @@ void loop() {
     } else {
         time_output();
         i = 0;
-        type = 8;
+        type = (current_tick < CYCLES_ONE_BASE) ? 8 : 10;
     }
+    ++current_tick;
+    if (current_tick >= CYCLES_ONE_BASE * 2)
+        current_tick = 0;
 
-    delay(300);
+    delay(UPDATE_PERIOD);
 }
