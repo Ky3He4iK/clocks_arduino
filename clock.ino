@@ -9,26 +9,25 @@
 #define CLK_OCT 10
 #define DIO_OCT 9
 
-#define brightness 1 // brightness of clocks
+#define BRIGHTNESS 1 // brightness of clocks
 
 #define ST_CP 3
 #define SH_CP 4 // ???
 #define DS 5
 
-const uint8_t SET = 6;
-const uint8_t HOUR = 7;
-const uint8_t MIN = 8;
+#define INDICATOR_LED 13 // led that indicates set mode
+
+#define BUTTON_SET 6 // buttons to set time
+#define BUTTON_HOUR 7
+#define BUTTON_MINUTES 8
 
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
 iarduino_RTC time(RTC_DS3231);
 
 uint8_t type = 8;
-uint8_t min, sec, hour, i = 0, a = 0;
-byte timeDisp[4];
-bool flag = LOW;
-
-//time_out(hour,min,sec);
+uint8_t minutes, sec, hours, i = 0, a = 0;
+bool indicator = LOW;
 
 void setup() {
     Wire.begin();
@@ -37,48 +36,42 @@ void setup() {
     pinMode(SH_CP, OUTPUT);
     pinMode(ST_CP, OUTPUT);
     pinMode(DS, OUTPUT);
-    pinMode(13, OUTPUT);
-    pinMode(SET, INPUT);
-    pinMode(HOUR, INPUT);
-    pinMode(MIN, INPUT);
+    pinMode(INDICATOR_LED, OUTPUT);
+    pinMode(BUTTON_SET, INPUT);
+    pinMode(BUTTON_HOUR, INPUT);
+    pinMode(BUTTON_MINUTES, INPUT);
 
     screen_HEX.init();
-    screen_HEX.set(brightness);
+    screen_HEX.set(BRIGHTNESS);
 
     screen_OCT.init();
-    screen_OCT.set(brightness);
+    screen_OCT.set(BRIGHTNESS);
 
     screen_HEX.point(true);
     screen_OCT.point(true);
 }
 
-void time_out() {
+/**
+ * outputs current time to *@param screen* with *@param base* numeric base
+ */
+void time_to_screen(uint8_t base, TM1637 &screen) {
+    screen.display(0, hours / base);
+    screen.display(1, hours % base);
+    screen.display(2, minutes / base);
+    screen.display(3, minutes % base);
+}
+
+/**
+ * outputs current time to all displays
+ */
+void time_output() {
+    // set blinking point every second
     screen_HEX.point(!(sec & 1));
     screen_OCT.point(!(sec & 1));
 
-    if (type == 10) {
-        timeDisp[0] = hour / 10;
-        timeDisp[1] = hour % 10;
-        timeDisp[2] = min / 10;
-        timeDisp[3] = min % 10;
-        for (int i = 0; i < 4; i++) {
-            screen_OCT.display(i, timeDisp[i]);
-        }
-    } else {
-        timeDisp[0] = hour / 8;
-        timeDisp[1] = hour % 8;
-        timeDisp[2] = min / 8;
-        timeDisp[3] = min % 8;
-        for (int i = 0; i < 4; i++)
-            screen_OCT.display(i, timeDisp[i]);
-    }
-
-    timeDisp[0] = hour / 16;
-    timeDisp[1] = hour % 16;
-    timeDisp[2] = min / 16;
-    timeDisp[3] = min % 16;
-    for (int i = 0; i < 4; i++)
-        screen_HEX.display(i, timeDisp[i]);
+    // output time to digit screens
+    time_to_screen(type, screen_OCT);
+    time_to_screen(16, screen_HEX);
 
     // выводим двоичные часы/минуты/секунды
     // Инициализируем начало приема данных
@@ -86,69 +79,73 @@ void time_out() {
 
     // Последовательная передача данных на пин DS
     shiftOut(DS, SH_CP, MSBFIRST, sec);
-    shiftOut(DS, SH_CP, MSBFIRST, min);
-    shiftOut(DS, SH_CP, MSBFIRST, hour);
+    shiftOut(DS, SH_CP, MSBFIRST, minutes);
+    shiftOut(DS, SH_CP, MSBFIRST, hours);
 
     // Инициализируем окончание передачи данных.
     // Регистры подадут напряжение на указанные выходы
     digitalWrite(ST_CP, HIGH);
 }
 
+/**
+ * sets current time by buttons
+ */
 void time_set() {
     i = 0;
 
-    while (digitalRead(SET))
-        digitalWrite(13, HIGH);
+    while (digitalRead(BUTTON_SET))
+        digitalWrite(INDICATOR_LED, HIGH);
 
     while (i < 100) {
         delay(100);
-        flag = !flag;
-        digitalWrite(13, flag);
-        if (digitalRead(HOUR)) {
+        indicator = !indicator;
+        digitalWrite(INDICATOR_LED, indicator);
+
+        if (digitalRead(BUTTON_HOUR)) {
             delay(50);
             time.settime(-1, -1, (time.Hours == 23 ? 0 : time.Hours + 1), -1, -1, -1, -1);
-            hour = time.Hours;
-            time_out();
+            hours = time.Hours;
+            time_output();
             i = 0;
-            flag = LOW;
+            indicator = LOW;
         }
 
-        if (digitalRead(MIN)) {
+        if (digitalRead(BUTTON_MINUTES)) {
             delay(50);
             time.settime(-1, (time.minutes == 59 ? 0 : time.minutes + 1), -1, -1, -1, -1, -1);
-            min = time.minutes;
-            time_out();
+            minutes = time.minutes;
+            time_output();
             i = 0;
-            flag = LOW;
+            indicator = LOW;
         }
 
         i++;
 
-        if (digitalRead(SET)) {
+        if (digitalRead(BUTTON_SET)) {
             i = 100;
-            flag = LOW;
+            indicator = LOW;
         }
     }
-    flag = LOW;
-    digitalWrite(13, flag);
+    indicator = LOW;
+    digitalWrite(INDICATOR_LED, indicator);
 }
 
 void loop() {
     time.gettime();
     sec = time.seconds;
-    min = time.minutes;
-    hour = time.Hours;
+    minutes = time.minutes;
+    hours = time.Hours;
 
-    if (digitalRead(SET)) {
+    if (digitalRead(BUTTON_SET)) {
         type = 10;
-        time_out();
+        time_output();
         i++;
         if (i > 10) {
-            digitalWrite(13, HIGH);
+            digitalWrite(INDICATOR_LED, HIGH);
             time_set();
         }
     } else {
-        time_out();
+        time_output();
         i = 0;
         type = 8;
     }
