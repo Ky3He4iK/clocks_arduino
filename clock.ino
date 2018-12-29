@@ -25,7 +25,7 @@
 #define CHANGE_TIME 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
 #define MODES_COUNT 2
 
-#define SMALL_DELAY 50
+#define SMALL_DELAY 100
 
 // every ONE_MODE_LENGTH increase mode
 const uint8_t ONE_MODE_LENGTH = (CHANGE_TIME * 1000) / UPDATE_PERIOD;
@@ -63,7 +63,6 @@ void setup() {
 
     screen_HEX.point(true);
     screen_OCT.point(true);
-
 }
 
 /**
@@ -88,11 +87,11 @@ void time_output() {
     // set blinking point every second
     screen_HEX.point(!(sec & 1));
     screen_OCT.point(!(sec & 1));
-
     switch (mode) { // show different info in different modes
         case 1:
-            time_to_screen(8, screen_OCT); // output time and temperature to digit screens
+            time_to_screen(10, screen_OCT); // output time and temperature to digit screens
             temp_to_hex_screen();
+            break;
         case 0:
         default: // use mode 0 as fallback
             time_to_screen(type, screen_OCT); // output time to digit screens
