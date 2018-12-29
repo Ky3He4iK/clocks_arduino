@@ -25,8 +25,10 @@
 #define CHANGE_TIME 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
 #define MODES_COUNT 2
 
-const uint8_t CYCLES_ONE_BASE = (CHANGE_TIME * 1000) /
-                                UPDATE_PERIOD; // every CYCLES_ONE_BASE change base between 10-bases and 8-based numerical systems
+#define SMALL_DELAY 50
+
+// every ONE_MODE_LENGTH increase mode
+const uint8_t ONE_MODE_LENGTH = (CHANGE_TIME * 1000) / UPDATE_PERIOD;
 
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
@@ -87,7 +89,7 @@ void time_output() {
     screen_HEX.point(!(sec & 1));
     screen_OCT.point(!(sec & 1));
 
-    switch (mode) {
+    switch (mode) { // show different info in different modes
         case 1:
             time_to_screen(8, screen_OCT); // output time and temperature to digit screens
             temp_to_hex_screen();
@@ -111,39 +113,47 @@ void time_output() {
     digitalWrite(ST_CP, HIGH);
 }
 
+void on_set_time() {
+    time_output();
+    i = 0;
+    delay(SMALL_DELAY);
+    indicator = LOW;
+}
+
+void update_time() {
+    time.gettime();
+    sec = time.seconds;
+    minutes = time.minutes;
+    hours = time.Hours;
+}
+
 /**
  * sets current time by buttons
  */
 void time_set() {
-    i = 0;
-
-    while (digitalRead(BUTTON_SET))
+    while (digitalRead(BUTTON_SET)) { // keep going while SET button is still pressed
         digitalWrite(INDICATOR_LED, HIGH);
+        delay(SMALL_DELAY);
+        update_time();
+        time_output();
+    }
 
-    while (i < 100) {
-        delay(100);
+    for (i = 0; i < 5000 / SMALL_DELAY; ++i) { // timeout about 5 seconds
+        delay(SMALL_DELAY);
         indicator = !indicator;
         digitalWrite(INDICATOR_LED, indicator);
 
         while (digitalRead(BUTTON_HOUR)) {
-            delay(50);
             time.settime(-1, -1, (time.Hours == 23 ? 0 : time.Hours + 1), -1, -1, -1, -1);
             hours = time.Hours;
-            time_output();
-            i = 0;
-            indicator = LOW;
+            on_set_time();
         }
 
         while (digitalRead(BUTTON_MINUTES)) {
-            delay(50);
             time.settime(-1, (time.minutes == 59 ? 0 : time.minutes + 1), -1, -1, -1, -1, -1);
             minutes = time.minutes;
-            time_output();
-            i = 0;
-            indicator = LOW;
+            on_set_time();
         }
-
-        i++;
 
         if (digitalRead(BUTTON_SET)) {
             indicator = LOW;
@@ -155,28 +165,27 @@ void time_set() {
 }
 
 void loop() {
-    time.gettime();
-    sec = time.seconds;
-    minutes = time.minutes;
-    hours = time.Hours;
+    update_time();
 
     if (digitalRead(BUTTON_SET)) {
         type = 10;
         mode = 0;
-        time_output();
         i++;
+        time_output();
         if (i > 10) {
             digitalWrite(INDICATOR_LED, HIGH);
             time_set();
         }
     } else {
-        time_output();
         i = 0;
-        mode = current_tick / CYCLES_ONE_BASE;
+        mode = current_tick / ONE_MODE_LENGTH;
         type = 8;
+        time_output();
     }
+
+    // increase tick and check for overflowing
     ++current_tick;
-    if (current_tick >= CYCLES_ONE_BASE * MODES_COUNT)
+    if (current_tick >= ONE_MODE_LENGTH * MODES_COUNT)
         current_tick = 0;
 
     delay(UPDATE_PERIOD);
