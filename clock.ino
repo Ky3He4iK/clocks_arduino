@@ -92,7 +92,9 @@ void setup() {
 #if DEBUG
     Serial.begin(9600);
 #endif
-    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0);
+    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0); // set address for our thermometer
+    thermo_sensors.setWaitForConversion(false); // enable async to avoid locking thread. We mustn't getting realtime values
+    thermo_sensors.requestTemperaturesByAddress(thermometer_address); // request temperature first time to have some valid data
 }
 
 /**
@@ -110,7 +112,7 @@ void time_to_screen(uint8_t base, TM1637 &screen) {
 void temp_to_screen(TM1637 &screen) {
     screen.point(false);
     if (thermometer_connected) {
-        thermo_sensors.requestTemperaturesByAddress(thermometer_address);
+        thermo_sensors.requestTemperaturesByAddress(thermometer_address); // send request to async update sensors info
         int8_t res = (int8_t) thermo_sensors.getTempC(thermometer_address);
 #if DEBUG
         Serial.println(thermo_sensors.getTempC(thermometer_address));
