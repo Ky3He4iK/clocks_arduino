@@ -23,8 +23,10 @@
 
 #define UPDATE_PERIOD 300 // update time every UPDATE_PERIOD ms
 #define CHANGE_TIME 3 // change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+#define MODES_COUNT 2
 
-const uint8_t CYCLES_ONE_BASE = (CHANGE_TIME * 1000) / UPDATE_PERIOD; // every CYCLES_ONE_BASE change base between 10-bases and 8-based numerical systems
+const uint8_t CYCLES_ONE_BASE = (CHANGE_TIME * 1000) /
+                                UPDATE_PERIOD; // every CYCLES_ONE_BASE change base between 10-bases and 8-based numerical systems
 
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
 TM1637 screen_OCT(CLK_OCT, DIO_OCT);
@@ -34,6 +36,10 @@ uint8_t current_tick = 0;
 uint8_t type = 8;
 uint8_t minutes, sec, hours, i = 0;
 bool indicator = LOW;
+
+uint8_t mode = 0; // mode of show
+// 0 - standart 8/16-based time
+// 1 - temperature and 10-based time
 
 void setup() {
     Wire.begin();
@@ -68,6 +74,11 @@ void time_to_screen(uint8_t base, TM1637 &screen) {
     screen.display(3, minutes % base);
 }
 
+
+void temp_to_hex_screen() {
+    //TODO
+}
+
 /**
  * outputs current time to all displays
  */
@@ -76,9 +87,15 @@ void time_output() {
     screen_HEX.point(!(sec & 1));
     screen_OCT.point(!(sec & 1));
 
-    // output time to digit screens
-    time_to_screen(type, screen_OCT);
-    time_to_screen(16, screen_HEX);
+    switch (mode) {
+        case 1:
+            time_to_screen(8, screen_OCT); // output time and temperature to digit screens
+            temp_to_hex_screen();
+        case 0:
+        default: // use mode 0 as fallback
+            time_to_screen(type, screen_OCT); // output time to digit screens
+            time_to_screen(16, screen_HEX);
+    }
 
     // выводим двоичные часы/минуты/секунды
     // Инициализируем начало приема данных
@@ -145,6 +162,7 @@ void loop() {
 
     if (digitalRead(BUTTON_SET)) {
         type = 10;
+        mode = 0;
         time_output();
         i++;
         if (i > 10) {
@@ -154,10 +172,11 @@ void loop() {
     } else {
         time_output();
         i = 0;
-        type = (current_tick < CYCLES_ONE_BASE) ? 8 : 10;
+        mode = current_tick / CYCLES_ONE_BASE;
+        type = 8;
     }
     ++current_tick;
-    if (current_tick >= CYCLES_ONE_BASE * 2)
+    if (current_tick >= CYCLES_ONE_BASE * MODES_COUNT)
         current_tick = 0;
 
     delay(UPDATE_PERIOD);
