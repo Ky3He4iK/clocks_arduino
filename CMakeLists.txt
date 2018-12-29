@@ -9,7 +9,7 @@ project(${PROJECT_NAME})
 
 # Define additional source and header files or default arduino sketch files
 # set(${PROJECT_NAME}_SRCS)
-set(${PROJECT_NAME}_HDRS User_Setup.h)
+#set(${PROJECT_NAME}_HDRS User_Setup.h)
 
 ### Additional static libraries to include in the target.
 # set(${PROJECT_NAME}_LIBS)
@@ -26,11 +26,11 @@ set(${PROJECT_NAME}_SKETCH clock.ino)
 link_directories(~/Arduino/libraries)
 
 # For nested library sources replace ${LIB_NAME} with library name for each library
- set(_RECURSE true)
+set(_RECURSE true)
 
 #### Additional settings for programmer. From programmers.txt
-# set(${PROJECT_NAME}_PROGRAMMER avrispmkii)
-# set(${PROJECT_NAME}_PORT /dev/cu.usbserial-00000000)
+set(${PROJECT_NAME}_PROGRAMMER arduinoisp)
+set(${PROJECT_NAME}_PORT /dev/ttyUSB0)
 # set(nano.upload.speed 9600)
 
 ## Verbose build process
