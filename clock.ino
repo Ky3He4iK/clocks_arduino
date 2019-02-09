@@ -8,52 +8,54 @@
 #include <DallasTemperature.h>
 #include <HardwareSerial.h>
 
-//#define DEBUG 0 // using in debug
+//#define DEBUG 0 // Поставить 1 для вывода в консоль отладочной информации
 
 #define CLK_HEX 12 // Пины "циферблатов"
 #define DIO_HEX 11
 #define CLK_OCT 10
 #define DIO_OCT 9
 
-#define BRIGHTNESS 1 // brightness of clocks
+#define BRIGHTNESS 1 // яркость циферблатов
 
 #define ST_CP 3 // pins to RTC
 #define SH_CP 4
 #define DS 5
 
-#define INDICATOR_LED 13 // led that indicates set mode
+#define INDICATOR_LED 13 // Индикатор режима настройки
 
-#define BUTTON_SET 6 // buttons to set time
+#define BUTTON_SET 6 // Кнопки для настройки времени
 #define BUTTON_HOUR 7
 #define BUTTON_MINUTES 8
 
-#define TEMPERATURE_PIN A0 // for temperature chip(s?) with 1-wire communication
+#define TEMPERATURE_PIN A0 // Для датчика(ов?) температуры используя 1-wire
 
-// symbols codes on screen
+// Закодированные символы
 #define DEGREE_SYMBOL 0b01100011
 #define C_SYMBOL 0b00111001
 #define r_SYMBOL 0b01010000
 #define E_SYMBOL 0b01111001
-// symbol structure:
+// Структура сивола:
 // ┏ 0 ┓
 // 5   1
 // ┣ 6 ┫
 // 4   2
 // ┗ 3 ┛
 
-// ---------------------------------- CONFIGURABLE CONSTANTS ---------------------------------------
-// update time every UPDATE_PERIOD ms
+// ----------------------------------  <Настраиваемые константы> ----------------------------------
+// Обновлять время на экране каждые .. мс
 #define UPDATE_PERIOD_MS 250
 
-// change time between 10-based and 8-based numerical systems every CHANGE_TIME s
+// Менять режим отображения каждые .. с
 #define CHANGE_TIME_S 5
+
+// Увеличить для вывода дополнительной информации
 #define MODES_COUNT 2
 
-// delay in set time mode
+// Задержка в режиме настройки, мс
 #define SMALL_DELAY_MS 100
-// ++++++++++++++++++++++++++++++++++ CONFIGURABLE CONSTANTS +++++++++++++++++++++++++++++++++++++++
+// ================================== </Настраиваемые константы> ==================================
 
-// every ONE_MODE_CYCLES increase mode
+// Каждый режим отображается .. раз
 const uint8_t ONE_MODE_CYCLES = (CHANGE_TIME_S * 1000) / UPDATE_PERIOD_MS;
 
 TM1637 screen_HEX(CLK_HEX, DIO_HEX);
@@ -70,23 +72,18 @@ uint8_t type = 8;
 uint8_t minutes, sec, hours, i = 0;
 bool indicator = LOW;
 
-uint8_t mode = 0; // mode of show
-// 0 - standart 8/16-based time
-// 1 - temperature and 10-based time
-
-//template <T>;
-//T abs(T a) {
-//    return (a < 0) ? -a : a;
-//}
+uint8_t mode = 0; // Режим
+// 0 - 8/16-ричная СС
+// 1 - Температура и 10-ричная СС
 
 void setup() {
     Wire.begin();
     time.begin();
 
-    uint8_t pins_output[] = {SH_CP, ST_CP, DS, INDICATOR_LED}; // temp array with all output pins in one place
+    uint8_t pins_output[] = {SH_CP, ST_CP, DS, INDICATOR_LED}; // Временный массив со всеми выходными пинами в 1 месте
     for (auto &i: pins_output)
         pinMode(i, OUTPUT);
-    uint8_t pins_input[] = {BUTTON_SET, BUTTON_HOUR, BUTTON_MINUTES}; // temp array with all input pins in one place
+    uint8_t pins_input[] = {BUTTON_SET, BUTTON_HOUR, BUTTON_MINUTES}; // Временный массив со всеми входными пинами в 1 месте
     for (auto &i: pins_input)
         pinMode(i, INPUT);
 
