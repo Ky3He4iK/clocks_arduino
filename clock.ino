@@ -83,14 +83,15 @@ void setup() {
     uint8_t pins_output[] = {SH_CP, ST_CP, DS, INDICATOR_LED}; // Временный массив со всеми выходными пинами в 1 месте
     for (auto &i: pins_output)
         pinMode(i, OUTPUT);
-    uint8_t pins_input[] = {BUTTON_SET, BUTTON_HOUR, BUTTON_MINUTES}; // Временный массив со всеми входными пинами в 1 месте
+    uint8_t pins_input[] = {BUTTON_SET, BUTTON_HOUR,
+                            BUTTON_MINUTES}; // Временный массив со всеми входными пинами в 1 месте
     for (auto &i: pins_input)
         pinMode(i, INPUT);
 
     screen_HEX.init();
-    screen_HEX.set(BRIGHTNESS);
-
     screen_OCT.init();
+
+    screen_HEX.set(BRIGHTNESS);
     screen_OCT.set(BRIGHTNESS);
 
     screen_HEX.point(true);
@@ -99,16 +100,17 @@ void setup() {
 #if DEBUG
     Serial.begin(9600);
 #endif
-    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0); // set address for our thermometer
-    thermo_sensors.setWaitForConversion(false); // enable async to avoid locking thread. We mustn't getting realtime values
-    thermo_sensors.requestTemperaturesByAddress(thermometer_address); // request temperature first time to have some valid data
+    thermometer_connected = thermo_sensors.getAddress(thermometer_address, 0); // Получить адресс термометра
+    thermo_sensors.setWaitForConversion(false); // Включаем асинхронность, чтоб не блокировался основной поток
+    thermo_sensors.requestTemperaturesByAddress(
+            thermometer_address); // Сразу запрос температуры, чтоб была получена к моменту вывода
 }
 
 /**
- * outputs current time to *@param screen* with *@param base* numeric base
+ * Выводит текущее время на экран *@param screen* с *@param base*-ричной СС
  */
 void time_to_screen(uint8_t base, TM1637 &screen) {
-    screen.point(!(sec & 1)); // set blinking point every second
+    screen.point(!(sec & 1)); // Мигаем каждую секунду
     screen.display(0, hours / base);
     screen.display(1, hours % base);
     screen.display(2, minutes / base);
@@ -119,7 +121,8 @@ void time_to_screen(uint8_t base, TM1637 &screen) {
 void temp_to_screen(TM1637 &screen) {
     screen.point(false);
     if (thermometer_connected) {
-        thermo_sensors.requestTemperaturesByAddress(thermometer_address); // send request to async update sensors info
+        thermo_sensors.requestTemperaturesByAddress(thermometer_address);
+        // Асинхронно посылаем асинхронный запрос на асинхронное получение асинхронной температуры
         int8_t res = (int8_t) thermo_sensors.getTempC(thermometer_address);
 #if DEBUG
         Serial.println(thermo_sensors.getTempC(thermometer_address));
@@ -127,8 +130,8 @@ void temp_to_screen(TM1637 &screen) {
         if (res == DEVICE_DISCONNECTED_C)
             thermometer_connected = false;
         else {
-            screen.display(0, abs(res) / 10);
-            screen.display(1, abs(res) % 10);
+            screen.display(0, abs(res) / (int8_t) 10);
+            screen.display(1, abs(res) % (int8_t) 10);
             screen.display_raw(2, DEGREE_SYMBOL);
             screen.display_raw(3, C_SYMBOL);
         }
@@ -149,17 +152,17 @@ void temp_to_screen(TM1637 &screen) {
 }
 
 /**
- * outputs current time to all displays
+ * Выводит текущее состояние на экраны
  */
 void time_output() {
-    switch (mode) { // show different info in different modes
+    switch (mode) {
         case 1:
-            time_to_screen(10, screen_HEX); // output time and temperature to digit screens
+            time_to_screen(10, screen_HEX); // Вывести нормальное время и температуру
             temp_to_screen(screen_OCT);
             break;
         case 0:
-        default: // use mode 0 as fallback
-            time_to_screen(type, screen_OCT); // output time to digit screens
+        default: // Режим 0 по умолчанию
+            time_to_screen(type, screen_OCT); // Вывести время
             time_to_screen(16, screen_HEX);
     }
 
@@ -194,17 +197,17 @@ void update_time() {
 }
 
 /**
- * sets current time by buttons
+ * Устанавливает текущее время при помощи кнопок
  */
 void time_set() {
-    while (digitalRead(BUTTON_SET)) { // keep going while SET button is still pressed
+    while (digitalRead(BUTTON_SET)) { // Пока кнопка зажата, продолжаем все по старому
         digitalWrite(INDICATOR_LED, HIGH);
         delay(SMALL_DELAY_MS);
         update_time();
         time_output();
     }
 
-    for (i = 0; i < 5000 / SMALL_DELAY_MS; ++i) { // timeout about 5 seconds
+    for (i = 0; i < 5000 / SMALL_DELAY_MS; ++i) { // ~5 секунд
         delay(SMALL_DELAY_MS);
         indicator = !indicator;
         digitalWrite(INDICATOR_LED, indicator);
@@ -252,7 +255,7 @@ void loop() {
         time_output();
     }
 
-    // increase tick and check for overflowing
+    // Следующий тик (с проверкой на переполнение)
     ++current_tick;
     if (current_tick >= ONE_MODE_CYCLES * MODES_COUNT)
         current_tick = 0;
