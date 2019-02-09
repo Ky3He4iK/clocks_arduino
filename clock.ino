@@ -157,8 +157,8 @@ void temp_to_screen(TM1637 &screen) {
 void time_output() {
     switch (mode) {
         case 1:
-            time_to_screen(10, screen_HEX); // Вывести нормальное время и температуру
-            temp_to_screen(screen_OCT);
+            time_to_screen(10, screen_OCT); // Вывести нормальное время и температуру
+            temp_to_screen(screen_HEX);
             break;
         case 0:
         default: // Режим 0 по умолчанию
