@@ -5,13 +5,10 @@
 #include <TM1637_mult.h>
 
 #include <OneWire.h>
-#include "libraries/DallasTemperature/DallasTemperature.h" // include by only library name wasn't work
-#include "libraries/DallasTemperature/DallasTemperature.cpp" // because normal library connection is'n working
-#include "../../../../usr/share/arduino/hardware/arduino/avr/cores/arduino/HardwareSerial.h"
-#include "../../../../usr/avr/include/avr/io.h"
-//#include <DallasTemperature.h>
+#include <DallasTemperature.h>
+#include <HardwareSerial.h>
 
-#define DEBUG 0 // using in debug
+//#define DEBUG 0 // using in debug
 
 #define CLK_HEX 12 // Пины "циферблатов"
 #define DIO_HEX 11
